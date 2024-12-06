@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { LazyLoadImage } from "react-lazy-load-image-component";
 import "react-lazy-load-image-component/src/effects/blur.css";
 import { createClient } from "pexels";
+import "./app.css";
 
 const UNSPLASH_ACCESS_KEY = "mfa2jN4-22m7PJJbZHtmcvhmdAQWhX1P26I12i19qJo";
 const PEXEL_ACCESS_KEY = "UihL9nVPpnpaWgXSjebPZY8Nkc4OAsKUBO16O842FlcSGBiJK54ICLPc";
@@ -35,7 +36,7 @@ const UnsplashPage = () => {
       <h1>Unsplash Image Search</h1>
       <SearchBar query={query} setQuery={setQuery} fetchImages={fetchImages} />
       {loading && <h2>Loading...</h2>}
-      <ImageGrid images={images} isUnsplash />
+      {images && <ImageGrid images={images} isUnsplash />}
     </div>
   );
 };
@@ -47,7 +48,11 @@ const PexelsPage = () => {
   const fetchImages = async () => {
     try {
       const client = createClient(PEXEL_ACCESS_KEY);
-      const photos = await client.photos.search({ query, per_page: 12 });
+      const photos = await client.photos.search({
+        query,
+        per_page: 25,
+        orientation: "landscape",
+      });
       setImages(photos?.photos || []);
     } catch (error) {
       console.error("Error fetching images from Pexels:", error);
@@ -127,27 +132,49 @@ const ImageGrid = ({ images, isUnsplash }) => (
 );
 
 const App = () => {
+  const cursorRef = useRef(null);
+
+  useEffect(() => {
+    const handleMouseMove = (event) => {
+      const { clientX, clientY } = event;
+      const cursor = cursorRef.current;
+
+      if (cursor) {
+        cursor.style.left = `${clientX}px`;
+        cursor.style.top = `${clientY}px`;
+      }
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+    };
+  }, []);
+
   return (
     <Router>
-      <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-        <nav style={{ marginBottom: "20px" }}>
-          <Link to="/" style={{ marginRight: "10px" }}>
-            Unsplash
-          </Link>
-          <Link to="/pexels">Pexels</Link>
-        </nav>
+      <div>
+        <div className="custom-cursor" ref={cursorRef}></div>
+        <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
+          <nav style={{ marginBottom: "20px" }}>
+            <Link to="/" style={{ marginRight: "10px" }}>
+              Unsplash
+            </Link>
+            <Link to="/pexels">Pexels</Link>
+          </nav>
 
-        <Routes>
-          <Route path="/" element={<UnsplashPage />} />
-          <Route path="/pexels" element={<PexelsPage />} />
-        </Routes>
+          <Routes>
+            <Route path="/" element={<UnsplashPage />} />
+            <Route path="/pexels" element={<PexelsPage />} />
+          </Routes>
+        </div>
       </div>
     </Router>
   );
 };
 
 export default App;
-
 
 
 // import React, { useState, useEffect } from "react";
